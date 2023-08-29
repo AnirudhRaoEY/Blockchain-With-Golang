@@ -1,2 +1,5 @@
 # Blockchain-With-Golang
- A Blockchain with Golang 
+
+Will be Buiding a Blockchain in golang with a Web inerface.
+
+
