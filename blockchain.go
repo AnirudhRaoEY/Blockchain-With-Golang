@@ -9,11 +9,14 @@ import (
 	"time"
 )
 
+const Minning_difficulty = 3
+
 // Defining a Block- Main Structure
 type Block struct {
+	timestamp    int64
 	nounce       int
 	previousHash [32]byte
-	timestamp    int64
+
 	transactions []*Transaction
 }
 
@@ -40,7 +43,6 @@ func (b *Block) Print() {
 // Creating a Hash: Using the Sha256 Algorithm
 func (b *Block) Hash() [32]byte {
 	m, _ := json.Marshal(b)
-	fmt.Println(string(m))
 	return sha256.Sum256([]byte(m))
 }
 
@@ -103,6 +105,36 @@ func (bc *Blockchain) AddTransaction(sender string, recipient string, value floa
 
 }
 
+func (bc *Blockchain) CopytranscationPool() []*Transaction {
+	transactions := make([]*Transaction, 0)
+	for _, t := range bc.transationPool {
+		transactions = append(transactions,
+			NewTransaction(t.senderBlockChainAddress,
+				t.recipientBlockChainAddress,
+				t.value))
+	}
+	return transactions
+}
+
+func (bc *Blockchain) ValidProof(nounce int, previousHash [32]byte, trnsactions []*Transaction, difficulty int) bool {
+	zeros := strings.Repeat("0", difficulty)
+	guessblock := Block{0, nounce, previousHash, trnsactions}
+	guessHashstr := fmt.Sprintf("%x", guessblock.Hash())
+	return guessHashstr[:difficulty] == zeros
+}
+
+// Proof of Work
+func (bc *Blockchain) ProofofWork() int {
+	transactions := bc.CopytranscationPool()
+	previousHash := bc.LastBlock().Hash()
+	nounce := 0
+	//Commputing the correct Nounce
+	for bc.ValidProof(nounce, previousHash, transactions, Minning_difficulty) {
+		nounce += 1
+	}
+	return nounce
+}
+
 // Creating a Transaction Block
 type Transaction struct {
 	senderBlockChainAddress    string
@@ -148,12 +180,15 @@ func main() {
 	blockchain.Print()
 	blockchain.AddTransaction("A", "B", 1.0)
 	previousHash := blockchain.LastBlock().previousHash
-	blockchain.CreateBlock(5, previousHash)
-	
+	nounce := blockchain.ProofofWork()
+	blockchain.CreateBlock(nounce, previousHash)
 	blockchain.Print()
+
 	blockchain.AddTransaction("B", "C", 2.0)
 	blockchain.AddTransaction("X", "Y", 3.0)
-	blockchain.CreateBlock(2, previousHash)
+	previousHash = blockchain.LastBlock().Hash()
+	nounce = blockchain.ProofofWork()
+	blockchain.CreateBlock(nounce, previousHash)
 	blockchain.Print()
 
 }
